@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Flor amarilla 3D con tallo</title>
+<style>
+  :root{
+    --size: clamp(240px, 60vmin, 800px);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    overflow:hidden;
+  }
+
+  #stars {
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:black;
+    z-index:-1;
+  }
+
+  .scene{
+    width:var(--size);
+    height:var(--size);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    perspective:1000px;
+    z-index:1;
+    opacity:0; /* inicialmente oculto */
+    transition: opacity 1.5s ease;
+  }
+
+  .flower {
+    width:100%;
+    height:100%;
+    transform-origin: 50% 50%;
+    animation: gentle-tilt 14s ease-in-out infinite;
+  }
+
+  @keyframes gentle-tilt{
+    0%   { transform: rotate(-4deg); }
+    50%  { transform: rotate(4deg);  }
+    100% { transform: rotate(-4deg); }
+  }
+
+  .petal { cursor:pointer; }
+  .petal .ell {
+    transition: transform 600ms cubic-bezier(.2,.9,.3,1), filter 400ms;
+    transform-origin: 50% 70%;
+  }
+  .center { cursor:pointer; }
+
+  .hint{
+    position:fixed;
+    left:12px;
+    bottom:12px;
+    background: rgba(0,0,0,0.28);
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:13px;
+    color:#fff;
+    backdrop-filter: blur(4px);
+    z-index:2;
+    opacity:0; /* oculta al inicio */
+    transition: opacity 1s ease;
+  }
+
+  /* Intro */
+  #intro {
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:black;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    color:#ffe34a;
+    font-size:28px;
+    font-weight:bold;
+    z-index:100;
+    animation: fadeOut 3s ease forwards;
+    animation-delay: 3s;
+  }
+  #intro span{
+    font-size:18px;
+    margin-top:10px;
+    color:#fff8b9;
+  }
+
+  @keyframes fadeOut {
+    to { opacity:0; visibility:hidden; }
+  }
+
+  /* Papiro decorado */
+  .scroll {
+    position: fixed;
+    background: #fdf3d0;
+    border: 4px solid #d1a757;
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    padding: 14px 20px;
+    font-size: 16px;
+    color: #3b2c13;
+    text-align: center;
+    max-width: 260px;
+    z-index: 10;
+    transform: scale(0);
+    opacity: 0;
+    animation: appearScroll 0.6s forwards;
+  }
+  @keyframes appearScroll {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Partículas de explosión */
+  .particle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff, transparent);
+    pointer-events: none;
+    z-index: 9;
+    animation: explode 800ms ease-out forwards;
+  }
+  @keyframes explode {
+    to {
+      transform: translate(var(--dx), var(--dy)) scale(0.2);
+      opacity: 0;
+    }
+  }
+</style>
+</head>
+<body>
+  <canvas id="stars"></canvas>
+
+  <!-- Intro -->
+  <div id="intro">
+    ✨ Para ti, mi reina hermosa 💛  
+    <span>Con todo mi amor</span>
+  </div>
+
+  <div class="scene" id="sceneContainer">
+    <svg class="flower" id="flowerSVG" viewBox="-200 -300 400 600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="petalGrad" cx="30%" cy="30%" r="80%">
+          <stop offset="0%"  stop-color="#fff8b9"/>
+          <stop offset="30%" stop-color="#ffe34a"/>
+          <stop offset="60%" stop-color="#ffd100"/>
+          <stop offset="100%" stop-color="#e6b000"/>
+        </radialGradient>
+
+        <radialGradient id="centerGrad" cx="35%" cy="35%" r="75%">
+          <stop offset="0%"  stop-color="#fff4c9"/>
+          <stop offset="25%" stop-color="#ffd95a"/>
+          <stop offset="65%" stop-color="#e6b000"/>
+          <stop offset="100%" stop-color="#c08100"/>
+        </radialGradient>
+
+        <linearGradient id="stemGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#2ecc71"/>
+          <stop offset="100%" stop-color="#1b8f46"/>
+        </linearGradient>
+
+        <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="10" stdDeviation="16" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+
+      <!-- tallo -->
+      <rect x="-8" y="40" width="16" height="240" rx="8" fill="url(#stemGrad)" />
+      <!-- hojas -->
+      <path d="M -8 140 C -120 100 -120 200 -8 180 Z" fill="url(#stemGrad)" />
+      <path d="M 8 180 C 120 160 120 240 8 220 Z" fill="url(#stemGrad)" />
+
+      <!-- pétalos -->
+      <g class="petal" data-quote="Siempre me has cuidado bien — Iron Man 2" transform="rotate(0)">
+        <ellipse class="ell" cx="0" cy="-86" rx="72" ry="110" fill="url(#petalGrad)" filter="url(#softShadow)"/>
+      </g>
+      <g class="petal" data-quote="No tengo a nadie más... — Iron Man 1" transform="rotate(72)">
+        <ellipse class="ell" cx="0" cy="-86" rx="72" ry="110" fill="url(#petalGrad)" filter="url(#softShadow)"/>
+      </g>
+      <g class="petal" data-quote="El riesgo inminente... y tengo que proteger lo único que le da sentido a mi vida: tú — Iron Man 3" transform="rotate(144)">
+        <ellipse class="ell" cx="0" cy="-86" rx="72" ry="110" fill="url(#petalGrad)" filter="url(#softShadow)"/>
+      </g>
+      <g class="petal" data-quote="Está bien, no la merezco... pero te equivocas en algo: ella era perfecta — Iron Man 3" transform="rotate(216)">
+        <ellipse class="ell" cx="0" cy="-86" rx="72" ry="110" fill="url(#petalGrad)" filter="url(#softShadow)"/>
+      </g>
+      <g class="petal" data-quote="Voy a soñar contigo, porque siempre te pienso — Avengers: Endgame" transform="rotate(288)">
+        <ellipse class="ell" cx="0" cy="-86" rx="72" ry="110" fill="url(#petalGrad)" filter="url(#softShadow)"/>
+      </g>
+
+      <!-- centro -->
+      <g class="center" id="centerGroup">
+        <circle r="58" fill="url(#centerGrad)" filter="url(#softShadow)"/>
+        <circle r="20" fill="#c08100" transform="translate(0,-4)"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="hint" id="hintBox">Haz clic en un pétalo o el centro para ver magia ✨</div>
+
+<script>
+// Crear partículas de explosión
+function createExplosion(x, y) {
+  for (let i = 0; i < 20; i++) {
+    const particle = document.createElement("div");
+    particle.className = "particle";
+    particle.style.left = x + "px";
+    particle.style.top = y + "px";
+    const dx = (Math.random() - 0.5) * 200 + "px";
+    const dy = (Math.random() - 0.5) * 200 + "px";
+    particle.style.setProperty("--dx", dx);
+    particle.style.setProperty("--dy", dy);
+    document.body.appendChild(particle);
+    setTimeout(() => particle.remove(), 800);
+  }
+}
+
+// Crear papiro decorado en posición aleatoria
+function showScroll(text) {
+  const scroll = document.createElement("div");
+  scroll.className = "scroll";
+  scroll.textContent = text;
+
+  const x = Math.random() * (window.innerWidth - 280);
+  const y = Math.random() * (window.innerHeight - 140);
+
+  scroll.style.left = x + "px";
+  scroll.style.top = y + "px";
+
+  document.body.appendChild(scroll);
+
+  // explosión justo detrás
+  createExplosion(x + 100, y + 40);
+
+  setTimeout(() => {
+    scroll.style.transition = "opacity 1s ease";
+    scroll.style.opacity = 0;
+    setTimeout(() => scroll.remove(), 1000);
+  }, 4000);
+}
+
+// Interacciones pétalos
+(function(){
+  const petals = document.querySelectorAll('.petal');
+  petals.forEach(p => {
+    const ell = p.querySelector('.ell');
+    const phrase = p.getAttribute('data-quote');
+
+    p.addEventListener('click', () => {
+      // animación de rebote del pétalo
+      ell.animate([
+        { transform: 'translateY(0) scale(1)' },
+        { transform: 'translateY(-20px) scale(1.1)' },
+        { transform: 'translateY(0) scale(1)' }
+      ], { duration: 600, easing: 'ease-out' });
+
+      // mostrar papiro con explosión
+      showScroll(phrase);
+    });
+  });
+
+  // Centro especial
+  document.getElementById("centerGroup").addEventListener("click", () => {
+    showScroll("💕 Espero que te guste mi reina hermosa 👑✨");
+  });
+})();
+
+// Fondo estrellado animado
+(function(){
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let w,h,stars;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    stars = Array.from({length:200}, () => ({
+      x: Math.random()*w,
+      y: Math.random()*h,
+      r: Math.random()*1.5+0.5,
+      alpha: Math.random()
+    }));
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = "white";
+    stars.forEach(s => {
+      s.alpha += (Math.random()-0.5)*0.05;
+      if(s.alpha<0) s.alpha=0;
+      if(s.alpha>1) s.alpha=1;
+      ctx.globalAlpha = s.alpha;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+// Mostrar flor después de la intro
+setTimeout(() => {
+  document.getElementById("sceneContainer").style.opacity = 1;
+  document.getElementById("hintBox").style.opacity = 1;
+}, 100);
+</script>
+
+<!-- AUDIO -->
+<audio id="bg-music" autoplay loop>
+  <source src="floresAmarillas.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  // Hack para evitar que Chrome bloquee autoplay
+  document.addEventListener("DOMContentLoaded", () => {
+    const music = document.getElementById("bg-music");
+    music.volume = 0.5; // volumen moderado
+    const play = () => {
+      music.play().catch(()=>{});
+      document.removeEventListener("click", play);
+    };
+    // Si Chrome bloquea, al primer click empieza la música
+    document.addEventListener("click", play);
+  });
+</script>
+
+</body>
+</html>
